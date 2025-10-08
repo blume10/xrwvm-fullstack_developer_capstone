@@ -8,44 +8,87 @@
 # from django.contrib import messages
 # from datetime import datetime
 
-from django.http import JsonResponse
-from django.contrib.auth import login, authenticate
+from django.shortcuts import render, redirect
+from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
+from django.contrib.auth import login, logout, authenticate
+from django.contrib.auth.models import User
+from django.views.decorators.csrf import csrf_exempt
 import logging
 import json
-from django.views.decorators.csrf import csrf_exempt
-# from .populate import initiate
-
-
+from datetime import datetime
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
 
-
-# Create your views here.
-
-# Create a `login_request` view to handle sign in request
+# -------------------------------
+# LOGIN VIEW
+# -------------------------------
 @csrf_exempt
 def login_user(request):
-    # Get username and password from request.POST dictionary
-    data = json.loads(request.body)
-    username = data['userName']
-    password = data['password']
-    # Try to check if provide credential can be authenticated
-    user = authenticate(username=username, password=password)
-    data = {"userName": username}
-    if user is not None:
-        # If user is valid, call login method to login current user
-        login(request, user)
-        data = {"userName": username, "status": "Authenticated"}
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            username = data.get('userName')
+            password = data.get('password')
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+        user = authenticate(username=username, password=password)
+        if user is not None:
+            login(request, user)
+            return JsonResponse({"userName": username, "status": "Authenticated"})
+        else:
+            return JsonResponse({"error": "Invalid credentials"}, status=401)
+    else:
+        return JsonResponse({"info": "Please send a POST request with JSON {userName, password}."})
+
+
+# -------------------------------
+# LOGOUT VIEW
+# -------------------------------
+@csrf_exempt
+def logout_request(request):
+    # Benutzer-Session beenden
+    logout(request)
+    # Antwort zurückgeben – leerer Benutzername
+    data = {"userName": ""}
     return JsonResponse(data)
 
-# Create a `logout_request` view to handle sign out request
-# def logout_request(request):
-# ...
+# -------------------------------
+# REGISTRATION VIEW
+# -------------------------------
+@csrf_exempt
+def registration(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            username = data.get("userName")
+            password = data.get("password")
+            first_name = data.get("firstName", "")
+            last_name = data.get("lastName", "")
+            email = data.get("email", "")
 
-# Create a `registration` view to handle sign up request
-# @csrf_exempt
-# def registration(request):
-# ...
+            # Prüfen, ob der Benutzername bereits existiert
+            if User.objects.filter(username=username).exists():
+                return JsonResponse({"userName": username, "error": "Already Registered"})
+
+            # Benutzer erstellen
+            user = User.objects.create_user(
+                username=username,
+                password=password,
+                first_name=first_name,
+                last_name=last_name,
+                email=email
+            )
+
+            # Benutzer automatisch einloggen
+            login(request, user)
+            return JsonResponse({"userName": username, "status": "Authenticated"})
+        except Exception as e:
+            logger.error(f"Registration error: {e}")
+            return JsonResponse({"error": "Invalid data or request"})
+    else:
+        return JsonResponse({"status": "Only POST method allowed"})
+
 
 # # Update the `get_dealerships` view to render the index page with
 # a list of dealerships
