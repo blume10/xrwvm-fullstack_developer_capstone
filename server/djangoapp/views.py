@@ -7,7 +7,8 @@
 # from django.contrib.auth import logout
 # from django.contrib import messages
 # from datetime import datetime
-
+from .models import CarMake, CarModel
+from .populate import initiate
 from django.shortcuts import render, redirect
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
 from django.contrib.auth import login, logout, authenticate
@@ -89,6 +90,22 @@ def registration(request):
     else:
         return JsonResponse({"status": "Only POST method allowed"})
 
+
+def get_cars(request):
+    count = CarMake.objects.count()
+    print(f"CarMake count: {count}")
+
+    if count == 0:
+        initiate()
+
+    car_models = CarModel.objects.select_related('make')
+    cars = []
+    for car_model in car_models:
+        cars.append({
+            "CarModel": car_model.name,
+            "CarMake": car_model.make.name
+        })
+    return JsonResponse({"CarModels": cars})
 
 # # Update the `get_dealerships` view to render the index page with
 # a list of dealerships
