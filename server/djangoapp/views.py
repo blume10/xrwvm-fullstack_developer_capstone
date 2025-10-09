@@ -11,6 +11,7 @@ from .models import CarMake, CarModel
 from .populate import initiate
 from django.shortcuts import render, redirect
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
+from .restapis import get_request, analyze_review_sentiments
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.models import User
 from django.views.decorators.csrf import csrf_exempt
@@ -111,14 +112,56 @@ def get_cars(request):
 # a list of dealerships
 # def get_dealerships(request):
 # ...
-
+#Update the `get_dealerships` render list of dealerships all by default, particular state if state is passed
+def get_dealerships(request, state="All"):
+    if(state == "All"):
+        endpoint = "/fetchDealers"
+    else:
+        endpoint = "/fetchDealers/"+state
+    dealerships = get_request(endpoint)
+    return JsonResponse({"status":200,"dealers":dealerships})
 # Create a `get_dealer_reviews` view to render the reviews of a dealer
 # def get_dealer_reviews(request,dealer_id):
 # ...
+def get_dealer_reviews(request, dealer_id):
+    if dealer_id:
+        endpoint = f"/fetchReviews/dealer/{dealer_id}"
+        reviews = get_request(endpoint)
+
+        review_details = []
+        for review in reviews:
+            # Sentimentanalyse mit Microservice aufrufen
+            sentiment_result = analyze_review_sentiments(review.get("review", ""))
+            sentiment = sentiment_result.get("label", "neutral") if sentiment_result else "neutral"
+            
+            # Review-Daten + Sentiment speichern
+            review_detail = {
+                "id": review.get("id"),
+                "name": review.get("name"),
+                "dealership": review.get("dealership"),
+                "review": review.get("review"),
+                "purchase": review.get("purchase"),
+                "car_make": review.get("car_make"),
+                "car_model": review.get("car_model"),
+                "car_year": review.get("car_year"),
+                "sentiment": sentiment
+            }
+            review_details.append(review_detail)
+
+        return JsonResponse({"status": 200, "reviews": review_details})
+    else:
+        return JsonResponse({"status": 400, "message": "Bad Request"})
 
 # Create a `get_dealer_details` view to render the dealer details
 # def get_dealer_details(request, dealer_id):
 # ...
+def get_dealer_details(request, dealer_id):
+    if dealer_id:
+        endpoint = f"/fetchDealer/{dealer_id}"
+        dealership = get_request(endpoint)
+        return JsonResponse({"status": 200, "dealer": dealership})
+    else:
+        return JsonResponse({"status": 400, "message": "Bad Request"})
 
 # Create a `add_review` view to submit a review
 # def add_review(request):
