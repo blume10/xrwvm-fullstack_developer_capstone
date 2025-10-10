@@ -1,46 +1,58 @@
-# Uncomment the imports below before you add the function code
-import requests
 import os
+import requests
+
 from dotenv import load_dotenv
 
+# Load environment variables from .env file
 load_dotenv()
 
-backend_url = os.getenv(
-    'backend_url', default="http://localhost:3030")
-sentiment_analyzer_url = os.getenv(
-    'sentiment_analyzer_url',
-    default="http://localhost:5050/")
+# ✅ Lade die Backend-URL für deinen Node/Mongo-Dienst
+backend_url = os.getenv("backend_url", "http://nadinalijeva-3030.theiadockernext-0-labs-prod-theiak8s-4-tor01.proxy.cognitiveclass.ai:3030")
 
-# def get_request(endpoint, **kwargs):
+# ✅ Lade die Sentiment Analyzer URL (Code Engine Microservice)
+sentiment_analyzer_url = os.getenv("sentiment_analyzer_url", "http://localhost:5050/")
+
+print("DEBUG: backend_url =", backend_url)
+print("DEBUG: sentiment_analyzer_url =", sentiment_analyzer_url)
+
+# ==========================================================
+# Function: get_request
+# ==========================================================
 def get_request(endpoint, **kwargs):
+    """Send GET request to backend service (Node app)."""
     params = ""
-    if(kwargs):
-        for key,value in kwargs.items():
-            params=params+key+"="+value+"&"
+    if kwargs:
+        params = "&".join([f"{key}={value}" for key, value in kwargs.items()])
 
-    request_url = backend_url+endpoint+"?"+params
+    # Compose full URL
+    request_url = f"{backend_url}{endpoint}"
+    if params:
+        request_url += f"?{params}"
 
-    print("GET from {} ".format(request_url))
+    print(f"DEBUG: GET from {request_url}")
+
     try:
-        # Call get method of requests library with URL and parameters
-        response = requests.get(request_url)
-        return response.json()
-    except:
-        # If any error occurs
-        print("Network exception occurred")
-# Add code for get requests to back end
-
-def analyze_review_sentiments(text):
-    request_url = sentiment_analyzer_url+"analyze/"+text
-    try:
-        # Call get method of requests library with URL and parameters
-        response = requests.get(request_url)
+        response = requests.get(request_url, timeout=5)
+        response.raise_for_status()  # Raise HTTPError for bad responses (4xx, 5xx)
+        print("DEBUG: response OK")
         return response.json()
     except Exception as err:
-        print(f"Unexpected {err=}, {type(err)=}")
-        print("Network exception occurred")
-# request_url = sentiment_analyzer_url+"analyze/"+text
-# Add code for retrieving sentiments
+        print(f"❌ Network exception occurred: {err}")
+        return []
 
-# def post_review(data_dict):
-# Add code for posting review
+
+# ==========================================================
+# Function: analyze_review_sentiments
+# ==========================================================
+def analyze_review_sentiments(text):
+    """Call external sentiment analyzer microservice."""
+    request_url = f"{sentiment_analyzer_url}analyze/{text}"
+    print(f"DEBUG: Sentiment request to {request_url}")
+
+    try:
+        response = requests.get(request_url, timeout=5)
+        response.raise_for_status()
+        return response.json()
+    except Exception as err:
+        print(f"❌ Sentiment API error: {err}")
+        return {"label": "neutral"}
