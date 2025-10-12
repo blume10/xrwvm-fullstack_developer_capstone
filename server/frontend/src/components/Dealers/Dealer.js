@@ -1,59 +1,60 @@
-import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import React, { useEffect, useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
 
-function Dealer() {
+const Dealer = () => {
   const { id } = useParams();
   const [dealer, setDealer] = useState(null);
   const [reviews, setReviews] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Händlerdetails abrufen
-    fetch(`/djangoapp/get_dealer_details/${id}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setDealer(data.dealer);
-      })
-      .catch((err) => console.error("Fehler beim Laden des Händlers:", err));
+    // Beispiel: Funktion zum Laden der Händlerinformationen und Bewertungen
+    const fetchDealerData = async () => {
+      try {
+        // API-Aufrufe an Backend (z.B. /api/dealer/:id und /api/reviews?dealerId=id)
+        const dealerResponse = await fetch(`/api/dealer/${id}`);
+        const dealerData = await dealerResponse.json();
 
-    // Bewertungen abrufen
-    fetch(`/djangoapp/get_dealer_reviews/${id}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.reviews) setReviews(data.reviews);
-      })
-      .catch((err) => console.error("Fehler beim Laden der Bewertungen:", err));
+        const reviewsResponse = await fetch(`/api/reviews?dealerId=${id}`);
+        const reviewsData = await reviewsResponse.json();
+
+        setDealer(dealerData);
+        setReviews(reviewsData);
+      } catch (error) {
+        console.error('Fehler beim Laden der Daten:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDealerData();
   }, [id]);
 
-  return (
-    <div className="p-6">
-      {dealer ? (
-        <>
-          <h2 className="text-2xl font-bold mb-4">
-            Händler: {dealer.full_name}
-          </h2>
-          <p className="mb-6">Bundesstaat: {dealer.state}</p>
+  if (loading) return <p>Lädt...</p>;
+  if (!dealer) return <p>Händler nicht gefunden.</p>;
 
-          <h3 className="text-xl font-semibold mb-2">Bewertungen:</h3>
-          {reviews.length > 0 ? (
-            <ul className="space-y-3">
-              {reviews.map((r, index) => (
-                <li key={index} className="border p-3 rounded-xl">
-                  <p><strong>{r.name}</strong>: {r.review}</p>
-                  <p>🗓️ {r.purchase_date}</p>
-                  <p>🚗 {r.car_make} {r.car_model} ({r.car_year})</p>
-                  <p>💬 Sentiment: <strong>{r.sentiment}</strong></p>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p>Keine Bewertungen vorhanden.</p>
-          )}
-        </>
+  return (
+    <div>
+      <h2>{dealer.name}</h2>
+      <p>{dealer.address}</p>
+      <p>{dealer.city}, {dealer.state}</p>
+
+      <h3>Bewertungen</h3>
+      {reviews.length === 0 ? (
+        <p>Keine Bewertungen vorhanden.</p>
       ) : (
-        <p>Lade Händlerinformationen...</p>
+        <ul>
+          {reviews.map((review) => (
+            <li key={review.id}>
+              <strong>{review.user}</strong>: {review.comment}
+            </li>
+          ))}
+        </ul>
       )}
+
+      <Link to={`/postreview/${id}`}>Bewertung hinzufügen</Link>
     </div>
   );
-}
+};
 
 export default Dealer;
