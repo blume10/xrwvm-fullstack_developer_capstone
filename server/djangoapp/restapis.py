@@ -42,7 +42,8 @@ def get_request(endpoint, **kwargs):
 
     try:
         response = requests.get(request_url, timeout=5)
-        response.raise_for_status()  # Raise HTTPError for bad responses (4xx, 5xx)
+        # Raise HTTPError for bad responses (4xx, 5xx)
+        response.raise_for_status()
         print("DEBUG: response OK")
         return response.json()
     except Exception as err:
