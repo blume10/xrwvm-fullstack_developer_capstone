@@ -1,18 +1,13 @@
-from django.shortcuts import render, redirect
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.models import User
 from django.views.decorators.csrf import csrf_exempt
 from .models import CarMake, CarModel
 from .populate import initiate
-from .restapis import (
-    get_request,
-    analyze_review_sentiments,
-    backend_url,
-)
+from .restapis import get_request, analyze_review_sentiments, backend_url
 import logging
 import json
-from datetime import datetime
+import requests  # ✅ Jetzt korrekt importiert
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
@@ -50,8 +45,7 @@ def login_user(request):
 @csrf_exempt
 def logout_request(request):
     logout(request)
-    data = {"userName": ""}
-    return JsonResponse(data)
+    return JsonResponse({"userName": ""})
 
 
 # -------------------------------
@@ -102,14 +96,10 @@ def get_cars(request):
         initiate()
 
     car_models = CarModel.objects.select_related("make")
-    cars = []
-    for car_model in car_models:
-        cars.append(
-            {
-                "CarModel": car_model.name,
-                "CarMake": car_model.make.name,
-            }
-        )
+    cars = [
+        {"CarModel": model.name, "CarMake": model.make.name}
+        for model in car_models
+    ]
     return JsonResponse({"CarModels": cars})
 
 
@@ -117,11 +107,7 @@ def get_cars(request):
 # GET DEALERSHIPS
 # -------------------------------
 def get_dealerships(request, state="All"):
-    if state == "All":
-        endpoint = "/fetchDealers"
-    else:
-        endpoint = f"/fetchDealers/{state}"
-
+    endpoint = "/fetchDealers" if state == "All" else f"/fetchDealers/{state}"
     print("DEBUG: get_dealerships calling endpoint:", endpoint)
     dealerships = get_request(endpoint)
     print("DEBUG: get_dealerships received:", dealerships)
@@ -194,7 +180,9 @@ def get_dealer_details(request, dealer_id):
 @csrf_exempt
 def add_review(request):
     if request.method != "POST":
-        return JsonResponse({"status": 400, "message": "POST request required"})
+        return JsonResponse(
+            {"status": 400, "message": "POST request required"}
+        )
 
     try:
         data = json.loads(request.body)

@@ -118,4 +118,4 @@ def initiate():
             make=data["make"],
             body_type=data["body_type"],
             year=data["year"],
-    )
+        )

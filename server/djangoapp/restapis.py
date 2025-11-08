@@ -1,19 +1,28 @@
 import os
 import requests
-
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
 
 # ✅ Lade die Backend-URL für deinen Node/Mongo-Dienst
-backend_url = os.getenv("backend_url", "http://nadinalijeva-3030.theiadockernext-0-labs-prod-theiak8s-4-tor01.proxy.cognitiveclass.ai:3030")
+backend_url = os.getenv(
+    "backend_url",
+    (
+        "http://nadinalijeva-3030.theiadockernext-0-labs-prod-"
+        "theiak8s-4-tor01.proxy.cognitiveclass.ai:3030"
+    ),
+)
 
 # ✅ Lade die Sentiment Analyzer URL (Code Engine Microservice)
-sentiment_analyzer_url = os.getenv("sentiment_analyzer_url", "http://localhost:5050/")
+sentiment_analyzer_url = os.getenv(
+    "sentiment_analyzer_url",
+    "http://localhost:5050/",
+)
 
 print("DEBUG: backend_url =", backend_url)
 print("DEBUG: sentiment_analyzer_url =", sentiment_analyzer_url)
+
 
 # ==========================================================
 # Function: get_request
@@ -45,7 +54,9 @@ def get_request(endpoint, **kwargs):
 # Function: analyze_review_sentiments
 # ==========================================================
 def analyze_review_sentiments(text):
+    """Dummy sentiment analyzer (returns neutral)."""
     return {"label": "neutral"}
+
 
 # ==========================================================
 # Function: get_dealer_from_node
