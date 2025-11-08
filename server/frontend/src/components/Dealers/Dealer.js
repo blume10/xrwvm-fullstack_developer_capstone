@@ -10,51 +10,54 @@ const Dealer = () => {
   useEffect(() => {
     // Beispiel: Funktion zum Laden der Händlerinformationen und Bewertungen
     const fetchDealerData = async () => {
-      try {
-        // API-Aufrufe an Backend (z.B. /api/dealer/:id und /api/reviews?dealerId=id)
-        const dealerResponse = await fetch(`/api/dealer/${id}`);
-        const dealerData = await dealerResponse.json();
-
-        const reviewsResponse = await fetch(`/api/reviews?dealerId=${id}`);
-        const reviewsData = await reviewsResponse.json();
-
-        setDealer(dealerData);
-        setReviews(reviewsData);
-      } catch (error) {
-        console.error('Fehler beim Laden der Daten:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
+        try {
+          // Händler-Details von Django holen
+          const dealerResponse = await fetch(`/djangoapp/get_dealer/${id}/`);
+          const dealerJson = await dealerResponse.json();
+          console.log("Dealer JSON:", dealerJson);
+      
+          // Bewertungen für diesen Händler holen
+          const reviewsResponse = await fetch(`/djangoapp/get_dealer_reviews/${id}/`);
+          const reviewsJson = await reviewsResponse.json();
+          console.log("Reviews JSON:", reviewsJson);
+      
+          setDealer(dealerJson.dealer || dealerJson); // falls dealer verschachtelt ist
+          setReviews(reviewsJson.reviews || []); // falls verschachtelt
+        } catch (error) {
+          console.error("Fehler beim Laden:", error);
+        } finally {
+          setLoading(false);
+        }
+      };
     fetchDealerData();
   }, [id]);
 
-  if (loading) return <p>Lädt...</p>;
-  if (!dealer) return <p>Händler nicht gefunden.</p>;
+if (loading) return <p>Lädt...</p>;
 
-  return (
-    <div>
-      <h2>{dealer.name}</h2>
-      <p>{dealer.address}</p>
-      <p>{dealer.city}, {dealer.state}</p>
+if (!dealer) return <p>Händler nicht gefunden.</p>;
 
-      <h3>Bewertungen</h3>
-      {reviews.length === 0 ? (
-        <p>Keine Bewertungen vorhanden.</p>
-      ) : (
-        <ul>
-          {reviews.map((review) => (
-            <li key={review.id}>
-              <strong>{review.user}</strong>: {review.comment}
-            </li>
-          ))}
-        </ul>
-      )}
+return (
+  <div style={{ padding: '1rem' }}>
+    <h2>{dealer.full_name || dealer.name}</h2>
+    <p>{dealer.address}</p>
+    <p>{dealer.city}, {dealer.state}</p>
 
-      <Link to={`/postreview/${id}`}>Bewertung hinzufügen</Link>
-    </div>
-  );
+    <h3>Bewertungen</h3>
+    {reviews.length === 0 ? (
+      <p>Keine Bewertungen vorhanden.</p>
+    ) : (
+      <ul>
+        {reviews.map((r) => (
+          <li key={r.id}>
+            <strong>{r.name}</strong> ({r.sentiment}) – {r.review}
+          </li>
+        ))}
+      </ul>
+    )}
+
+    <Link to={`/postreview/${id}`}>➕ Bewertung hinzufügen</Link>
+  </div>
+);
 };
 
 export default Dealer;

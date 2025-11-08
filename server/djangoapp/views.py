@@ -11,12 +11,13 @@ from .models import CarMake, CarModel
 from .populate import initiate
 from django.shortcuts import render, redirect
 from django.http import JsonResponse, HttpResponseRedirect, HttpResponse
-from .restapis import get_request, analyze_review_sentiments
+from .restapis import get_request, analyze_review_sentiments, get_dealer_from_node, backend_url
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.models import User
 from django.views.decorators.csrf import csrf_exempt
 import logging
 import json
+import requests
 from datetime import datetime
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
@@ -160,12 +161,41 @@ def get_dealer_reviews(request, dealer_id):
 # ...
 def get_dealer_details(request, dealer_id):
     if dealer_id:
-        endpoint = f"/fetchDealer/{dealer_id}"  # 👈 hier war der Fehler
+        endpoint = f"/fetchDealer/{dealer_id}"  # 👈 korrekt
         dealership = get_request(endpoint)
-        return JsonResponse({"status": 200, "dealer": dealership})
+        return JsonResponse({
+    "status": 200,
+    "dealer": {
+        "id": dealership.get("id"),
+        "name": dealership.get("full_name"),
+        "address": dealership.get("address"),
+        "city": dealership.get("city"),
+        "state": dealership.get("state"),
+    }
+})
+
     else:
         return JsonResponse({"status": 400, "message": "Bad Request"})
 
 # Create a `add_review` view to submit a review
 # def add_review(request):
 # ...
+
+@csrf_exempt
+def add_review(request):
+    import json, requests
+    from .restapis import backend_url
+    from django.http import JsonResponse
+
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            endpoint = f"{backend_url}/insert_review"
+            response = requests.post(endpoint, json=data)
+            response.raise_for_status()
+            return JsonResponse({"status": 200, "review": response.json()})
+        except Exception as e:
+            print("Error in add_review:", e)
+            return JsonResponse({"status": 500, "message": str(e)})
+    else:
+        return JsonResponse({"status": 400, "message": "POST request required"})

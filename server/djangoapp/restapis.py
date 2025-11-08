@@ -45,14 +45,13 @@ def get_request(endpoint, **kwargs):
 # Function: analyze_review_sentiments
 # ==========================================================
 def analyze_review_sentiments(text):
-    """Call external sentiment analyzer microservice."""
-    request_url = f"{sentiment_analyzer_url}analyze/{text}"
-    print(f"DEBUG: Sentiment request to {request_url}")
+    return {"label": "neutral"}
 
-    try:
-        response = requests.get(request_url, timeout=5)
-        response.raise_for_status()
-        return response.json()
-    except Exception as err:
-        print(f"❌ Sentiment API error: {err}")
-        return {"label": "neutral"}
+# ==========================================================
+# Function: get_dealer_from_node
+# ==========================================================
+def get_dealer_from_node(dealer_id):
+    """Fetch a single dealer by ID from Node backend."""
+    endpoint = f"/fetchDealer/{dealer_id}"
+    print(f"DEBUG: Fetch dealer from {endpoint}")
+    return get_request(endpoint)
