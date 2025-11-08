@@ -1,10 +1,15 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 
+
 class CarMake(models.Model):
     name = models.CharField(max_length=100, unique=True)
     description = models.TextField(blank=True)
-    founded = models.IntegerField(null=True, blank=True, help_text="Year founded (optional)")
+    founded = models.IntegerField(
+        null=True,
+        blank=True,
+        help_text="Year founded (optional)"
+    )
     country = models.CharField(max_length=100, blank=True)
 
     class Meta:
@@ -14,6 +19,7 @@ class CarMake(models.Model):
 
     def __str__(self):
         return self.name
+
 
 class CarModel(models.Model):
     # choices for body type
@@ -35,15 +41,26 @@ class CarModel(models.Model):
         on_delete=models.CASCADE,
         related_name='models'
     )
-    dealer_id = models.IntegerField(null=True, blank=True, help_text="External dealer id (Cloudant/Mongo)")
+    dealer_id = models.IntegerField(
+        null=True,
+        blank=True,
+        help_text="External dealer id (Cloudant or MongoDB)"
+    )
     name = models.CharField(max_length=100)
-    body_type = models.CharField(max_length=20, choices=BODY_TYPE_CHOICES, default=SEDAN)
-    # Year validators: minimum 2015, maximum 2023 as requested
+    body_type = models.CharField(
+        max_length=20,
+        choices=BODY_TYPE_CHOICES,
+        default=SEDAN
+    )
+    # Year validators: minimum 2015, maximum 2023
     year = models.PositiveIntegerField(
         null=True,
         blank=True,
-        validators=[MinValueValidator(2015), MaxValueValidator(2023)],
-        help_text="Year of the model (2015-2023)"
+        validators=[
+            MinValueValidator(2015),
+            MaxValueValidator(2023)
+        ],
+        help_text="Year of the model (2015–2023)"
     )
     color = models.CharField(max_length=50, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

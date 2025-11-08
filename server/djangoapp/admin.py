@@ -14,10 +14,12 @@
 from django.contrib import admin
 from .models import CarMake, CarModel
 
+
 @admin.register(CarMake)
 class CarMakeAdmin(admin.ModelAdmin):
     list_display = ('name', 'country', 'founded')
     search_fields = ('name', 'country')
+
 
 @admin.register(CarModel)
 class CarModelAdmin(admin.ModelAdmin):
