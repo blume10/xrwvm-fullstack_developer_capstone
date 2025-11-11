@@ -55,8 +55,22 @@ def get_request(endpoint, **kwargs):
 # Function: analyze_review_sentiments
 # ==========================================================
 def analyze_review_sentiments(text):
-    """Dummy sentiment analyzer (returns neutral)."""
-    return {"label": "neutral"}
+    """Send text to the sentiment analyzer microservice and return the result."""
+    try:
+        # Falls text Leerzeichen oder Sonderzeichen enthält, müssen wir sie URL-encoden
+        from urllib.parse import quote
+        encoded_text = quote(text)
+
+        request_url = f"{sentiment_analyzer_url}analyze/{encoded_text}"
+        print("DEBUG: Sentiment request URL =", request_url)
+
+        response = requests.get(request_url, timeout=5)
+        response.raise_for_status()  # Fehler bei HTTP 4xx/5xx
+        return response.json()
+    except Exception as err:
+        print(f"❌ Sentiment analysis failed: {err}")
+        return {"label": "neutral"}  # Fallback, falls der Service nicht erreichbar ist
+
 
 
 # ==========================================================
